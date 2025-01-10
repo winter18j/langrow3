@@ -55,4 +55,70 @@ import {
     remove(@Param('id') id: string) {
       return this.userService.remove(id);
     }
+  
+    @Post(':id/fcm-token')
+    @UseGuards(JwtAuthGuard)
+    async updateFcmToken(
+      @Param('id') id: string,
+      @Body('token') token: string
+    ) {
+      try {
+        console.log('Réception de la demande de mise à jour du token FCM');
+        console.log('ID utilisateur:', id);
+        console.log('Token reçu:', token);
+        
+        if (!token) {
+          throw new Error('Token FCM manquant');
+        }
+
+        const result = await this.userService.updateFcmToken(id, token);
+        console.log('Mise à jour réussie, résultat:', result);
+        return result;
+      } catch (error) {
+        console.error('Erreur dans le contrôleur updateFcmToken:', error);
+        throw error;
+      }
+    }
+  
+    @Post(':id/cheat-level')
+    @UseGuards(JwtAuthGuard)
+    async cheatLevelUp(@Param('id') id: string) {
+      console.log('Appel à cheatLevelUp reçu pour id:', id);
+      const result = await this.userService.cheatLevelUp(id);
+      console.log('Résultat cheatLevelUp:', { level: result.level, league: result.league });
+      return result;
+    }
+
+    @Post(':id/reset-level')
+    @UseGuards(JwtAuthGuard)
+    async resetLevel(@Param('id') id: string) {
+      return this.userService.resetLevel(id);
+    }
+
+    /**
+     * Ajoute un jeu à l'utilisateur.
+     * POST /users/:id/games
+     */
+    @Post(':id/games')
+    addGame(@Param('id') id: string, @Body('gameId') gameId: string) {
+      return this.userService.addGameToUser(id, gameId);
+    }
+
+    /**
+     * Récupère les jeux d'un utilisateur.
+     * GET /users/:id/games
+     */
+    @Get(':id/games')
+    getGames(@Param('id') id: string) {
+      return this.userService.getUserGames(id);
+    }
+
+    /**
+     * Envoie une notification de test à l'utilisateur.
+     * POST /users/:id/send-test-notification
+     */
+    @Post(':id/send-test-notification')
+    sendTestNotification(@Param('id') id: string) {
+      return this.userService.sendTestNotification(id);
+    }
   }

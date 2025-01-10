@@ -10,7 +10,6 @@ export default function LoginScreen({ navigation }) {
   const { loading, error } = useSelector(state => state.auth);
 
   useEffect(() => {
-    // Clear any previous errors when component mounts
     dispatch(clearError());
   }, []);
 
@@ -30,10 +29,9 @@ export default function LoginScreen({ navigation }) {
       const resultAction = await dispatch(loginUser({ email, password })).unwrap();
       console.log('Login log: ', resultAction);
       if (resultAction.access_token) {
-        navigation.navigate('Map');
+        navigation.navigate('MapScreen');
       }
     } catch (err) {
-      // Error is handled by the redux slice
       console.error('Login failed:', err);
     }
   };
@@ -83,7 +81,7 @@ export default function LoginScreen({ navigation }) {
 
       <Text 
         style={styles.simulateLink} 
-        onPress={() => navigation.navigate('Map')}
+        onPress={() => navigation.navigate('MapScreen')}
       >
         Simuler le jeu ici
       </Text>

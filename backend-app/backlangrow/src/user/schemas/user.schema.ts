@@ -1,8 +1,10 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Schema, Prop, SchemaFactory } from '@nestjs/mongoose';
+import { Document, Types } from 'mongoose';
 import { League } from '../enums/league.enum';
 import { Language } from '../enums/language.enum';
 import { GeoLocation } from '../interfaces/location.interface';
+import { Game } from '../../game/schemas/game.schema';
+import { Schema as MongooseSchema } from 'mongoose';
 
 export type UserDocument = User & Document;
 
@@ -59,6 +61,12 @@ export class User {
 
   @Prop({ required: true, default: 0 })
   timeSpentLearning: number;
+
+  @Prop()
+  fcmToken: string;
+
+  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'Game' }], default: [] })
+  games: Types.ObjectId[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

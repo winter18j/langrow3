@@ -1,21 +1,17 @@
-import { StatusBar } from 'expo-status-bar';
-import React, { lazy, Suspense, useEffect } from 'react';
-import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import React, { lazy, Suspense } from 'react';
+import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Provider, useSelector } from 'react-redux';
-import { store } from './src/redux/store';
-import { NotificationService } from './src/services/NotificationService';
+import { useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 
 // Screens
-const WelcomeScreen = lazy(() => import('./src/screens/WelcomeScreen'));
-const LoginScreen = lazy(() => import('./src/screens/LoginScreen'));
-const RegisterScreen = lazy(() => import('./src/screens/RegisterScreen'));
-const MapScreen = lazy(() => import('./src/screens/MapScreen'));
-const ProfileScreen = lazy(() => import('./src/screens/ProfileScreen'));
-const GamesScreen = lazy(() => import('./src/screens/GamesScreen'));
+const WelcomeScreen = lazy(() => import('../screens/WelcomeScreen'));
+const LoginScreen = lazy(() => import('../screens/LoginScreen'));
+const RegisterScreen = lazy(() => import('../screens/RegisterScreen'));
+const MapScreen = lazy(() => import('../screens/MapScreen'));
+const ProfileScreen = lazy(() => import('../screens/ProfileScreen'));
+const GamesScreen = lazy(() => import('../screens/GamesScreen'));
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -94,22 +90,14 @@ const AuthStack = () => (
   </Stack.Navigator>
 );
 
-const RootNavigator = () => {
+const AppNavigator = () => {
   const isAuthenticated = useSelector((state) => !!state.auth.token);
   const user = useSelector((state) => state.auth.user);
 
-  useEffect(() => {
-    const initNotifications = async () => {
-      if (isAuthenticated && user) {
-        const token = await NotificationService.registerForPushNotifications();
-        if (token) {
-          await NotificationService.updateUserToken(user._id, token);
-        }
-      }
-    };
-
-    initNotifications();
-  }, [isAuthenticated, user]);
+  if (user) {
+    global.userId = user._id;
+    global.token = state.auth.token;
+  }
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -122,17 +110,6 @@ const RootNavigator = () => {
   );
 };
 
-export default function App() {
-  return (
-    <Provider store={store}>
-      <NavigationContainer>
-        <RootNavigator />
-        <StatusBar style="light" />
-      </NavigationContainer>
-    </Provider>
-  );
-}
-
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
@@ -141,3 +118,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+
+export default AppNavigator; 

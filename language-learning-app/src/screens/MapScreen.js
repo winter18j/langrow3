@@ -10,7 +10,8 @@ export default function MapScreen({ navigation }) {
       <View style={styles.mapContainer}>
         <Text style={styles.mapText}>Carte à venir...</Text>
       </View>
-      <Button title="Voir Profil" onPress={() => navigation.navigate('Profile')} />
+      <Button title="Voir Profil" onPress={() => navigation.navigate('ProfileScreen')} />
+      <Button title="Mini-Jeux" onPress={() => navigation.navigate('GamesScreen')} />
     </View>
   );
 }
@@ -25,6 +26,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 10,
+    marginBottom: 20,
   },
   mapText: { fontSize: 18, color: '#777' },
 });
