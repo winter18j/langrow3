@@ -19,6 +19,7 @@ const MapScreen = lazy(() => import('./src/screens/MapScreen'));
 const ProfileScreen = lazy(() => import('./src/screens/ProfileScreen'));
 const GamesScreen = lazy(() => import('./src/screens/GamesScreen'));
 const LeaderboardScreen = lazy(() => import('./src/screens/LeaderboardScreen'));
+const WordToWordGameScreen = lazy(() => import('./src/screens/WordToWordGameScreen'));
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -71,83 +72,105 @@ const AuthNavigator = () => (
 );
 
 
-const MainNavigator = () => (
-  <Tab.Navigator
-    screenOptions={{
-      headerShown: false,
-      tabBarStyle: {
-        backgroundColor: '#000000',
-        borderTopColor: '#333333',
-        height: 60,
-        paddingBottom: 8,
-        paddingTop: 8,
-      },
-      tabBarActiveTintColor: '#99f21c',
-      tabBarInactiveTintColor: '#666666',
-      tabBarLabelStyle: {
-        fontSize: 12,
-        fontFamily: 'monospace',
-      },
-    }}
-  >
-    <Tab.Screen
-      name="Map"
-      component={MapScreen}
-      options={{
-        tabBarIcon: ({ focused, color }) => (
-          <Ionicons
-            name={focused ? 'map' : 'map-outline'}
-            size={24}
-            color={color}
-          />
-        ),
-        tabBarLabel: 'Carte'
+const MainNavigator = () => {
+  const Stack = createStackNavigator();
+  const Tab = createBottomTabNavigator();
+
+  const TabNavigator = () => (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: '#000000',
+          borderTopColor: '#333333',
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
+        tabBarActiveTintColor: '#99f21c',
+        tabBarInactiveTintColor: '#666666',
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontFamily: 'monospace',
+        },
       }}
-    />
-    <Tab.Screen
-      name="Games"
-      component={GamesScreen}
-      options={{
-        tabBarIcon: ({ focused, color }) => (
-          <Ionicons
-            name={focused ? 'game-controller' : 'game-controller-outline'}
-            size={24}
-            color={color}
-          />
-        ),
-        tabBarLabel: 'Jeux'
+    >
+      <Tab.Screen
+        name="Map"
+        component={MapScreen}
+        options={{
+          tabBarIcon: ({ focused, color }) => (
+            <Ionicons
+              name={focused ? 'map' : 'map-outline'}
+              size={24}
+              color={color}
+            />
+          ),
+          tabBarLabel: 'Carte'
+        }}
+      />
+      <Tab.Screen
+        name="Games"
+        component={GamesScreen}
+        options={{
+          tabBarIcon: ({ focused, color }) => (
+            <Ionicons
+              name={focused ? 'game-controller' : 'game-controller-outline'}
+              size={24}
+              color={color}
+            />
+          ),
+          tabBarLabel: 'Jeux'
+        }}
+      />
+      <Tab.Screen
+        name="Leaderboard"
+        component={LeaderboardScreen}
+        options={{
+          tabBarIcon: ({ focused, color }) => (
+            <Ionicons
+              name={focused ? 'trophy' : 'trophy-outline'}
+              size={24}
+              color={color}
+            />
+          ),
+          tabBarLabel: 'Classement'
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          tabBarIcon: ({ focused, color }) => (
+            <Ionicons
+              name={focused ? 'person' : 'person-outline'}
+              size={24}
+              color={color}
+            />
+          ),
+          tabBarLabel: 'Profil'
+        }}
+      />
+    </Tab.Navigator>
+  );
+
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
       }}
-    />
-    <Tab.Screen
-      name="Leaderboard"
-      component={LeaderboardScreen}
-      options={{
-        tabBarIcon: ({ focused, color }) => (
-          <Ionicons
-            name={focused ? 'trophy' : 'trophy-outline'}
-            size={24}
-            color={color}
-          />
-        ),
-        tabBarLabel: 'Classement'
-      }}
-    />
-    <Tab.Screen
-      name="Profile"
-      component={ProfileScreen}
-      options={{
-        tabBarIcon: ({ focused, color }) => (
-          <Ionicons
-            name={focused ? 'person' : 'person-outline'}
-            size={24}
-            color={color}
-          />
-        ),
-        tabBarLabel: 'Profil'
-      }}
-    />
-  </Tab.Navigator>
-);
+    >
+      <Stack.Screen name="TabNavigator" component={TabNavigator} />
+      <Stack.Screen name="WordToWordGame">
+        {(props) => (
+          <Suspense fallback={<LoadingScreen />}>
+            <WordToWordGameScreen {...props} />
+          </Suspense>
+        )}
+      </Stack.Screen>
+    </Stack.Navigator>
+  );
+};
 
 
 const RootNavigator = () => {
