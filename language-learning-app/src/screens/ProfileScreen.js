@@ -1,65 +1,42 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
+import { Ionicons } from '@expo/vector-icons';
 import { Language } from '../enums/language.enum';
 import { League } from '../enums/league.enum';
 
-const getLanguageLabel = (code) => {
-  return Object.keys(Language).find(key => Language[key] === code) || code;
+const LANGUAGE_FLAGS = {
+  fr: '🇫🇷',
+  en: '🇬🇧',
+  sp: '🇪🇸',
+  de: '🇩🇪',
+  it: '🇮🇹',
+  pt: '🇵🇹',
+  zh: '🇨🇳',
+  ja: '🇯🇵',
+  ko: '🇰🇷'
 };
 
-const getLeagueLabel = (code) => {
-  return Object.keys(League).find(key => League[key] === code) || code;
+const LEAGUE_COLORS = {
+  BRONZE: '#CD7F32',
+  SILVER: '#C0C0C0',
+  GOLD: '#FFD700',
+  PLATINUM: '#E5E4E2',
+  DIAMOND: '#B9F2FF',
+  MASTER: '#FF4D4D'
 };
 
-const PROFILE_FIELDS = {
-  name: {
-    label: 'Nom et prénom',
-    getValue: (user) => `${user?.firstName} ${user?.lastName}`,
-  },
-  nickname: {
-    label: 'Pseudo',
-    getValue: (user) => user?.nickname,
-  },
-  email: {
-    label: 'Email',
-    getValue: (user) => user?.email,
-  },
-  level: {
-    label: 'Niveau',
-    getValue: (user) => user?.level,
-  },
-  league: {
-    label: 'League',
-    getValue: (user) => getLeagueLabel(user?.league),
-  },
-  rank: {
-    label: 'Rang',
-    getValue: (user) => `#${user?.ladderRank}`,
-  },
-  mainLanguage: {
-    label: 'Langue Maternelle',
-    getValue: (user) => getLanguageLabel(user?.mainLanguage),
-  },
-  learnedLanguage: {
-    label: 'Langue Apprise',
-    getValue: (user) => getLanguageLabel(user?.learnedLanguage),
-  },
-  timeSpent: {
-    label: 'Time Spent',
-    getValue: (user) => {
-      const minutes = user?.timeSpentLearning || 0;
-      const hours = Math.floor(minutes / 60);
-      const remainingMinutes = minutes % 60;
-      return `${hours}h ${remainingMinutes}m`;
-    },
-  },
-  xpToNext: {
-    label: 'XP to Next',
-    getValue: (user) => user?.xpToNextLevel,
-  },
+const LEAGUE_ICONS = {
+  BRONZE: 'shield-outline',
+  SILVER: 'shield-half-outline',
+  GOLD: 'shield',
+  PLATINUM: 'star-outline',
+  DIAMOND: 'star-half-outline',
+  MASTER: 'star'
 };
+
+const { width } = Dimensions.get('window');
 
 export default function ProfileScreen({ navigation }) {
   const dispatch = useDispatch();
@@ -67,70 +44,280 @@ export default function ProfileScreen({ navigation }) {
 
   const handleLogout = () => {
     dispatch(logout());
-    navigation.navigate('LoginScreen');
+    navigation.navigate('Login');
   };
 
+  const renderXPGauge = () => {
+    const xpPercentage = (user?.xpToNextLevel / (100 * user?.level)) * 100;
+    return (
+      <View style={styles.xpGaugeContainer}>
+        <View style={styles.xpInfo}>
+          <Text style={styles.xpText}>XP jusqu'au niveau suivant</Text>
+          <Text style={styles.xpNumbers}>{user?.xpToNextLevel} / {100 * user?.level}</Text>
+        </View>
+        <View style={styles.gaugeBackground}>
+          <View style={[styles.gaugeFill, { width: `${xpPercentage}%` }]} />
+        </View>
+      </View>
+    );
+  };
+
+  const renderLeagueInfo = () => (
+    <View style={[styles.leagueCard, { backgroundColor: LEAGUE_COLORS[user?.league] + '22' }]}>
+      <View style={styles.leagueIconContainer}>
+        <Ionicons 
+          name={LEAGUE_ICONS[user?.league]} 
+          size={48} 
+          color={LEAGUE_COLORS[user?.league]} 
+        />
+      </View>
+      <View style={styles.leagueInfo}>
+        <Text style={styles.leagueName}>{user?.league}</Text>
+        <Text style={styles.leagueRank}>Rang #{user?.ladderRank}</Text>
+      </View>
+    </View>
+  );
+
+  const renderLanguages = () => (
+    <View style={styles.languageCard}>
+      <Text style={styles.sectionTitle}>Langues</Text>
+      <View style={styles.languagesContainer}>
+        <View style={styles.languageItem}>
+          <Text style={styles.languageFlag}>{LANGUAGE_FLAGS[user?.mainLanguage]}</Text>
+          <Text style={styles.languageLabel}>Langue maternelle</Text>
+        </View>
+        <Ionicons name="arrow-forward" size={24} color="#666666" />
+        <View style={styles.languageItem}>
+          <Text style={styles.languageFlag}>{LANGUAGE_FLAGS[user?.learnedLanguage]}</Text>
+          <Text style={styles.languageLabel}>Langue apprise</Text>
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderStats = () => (
+    <View style={styles.statsContainer}>
+      <View style={styles.statCard}>
+        <Ionicons name="time-outline" size={24} color="#99f21c" />
+        <Text style={styles.statValue}>
+          {Math.floor(user?.timeSpentLearning / 60)}h {user?.timeSpentLearning % 60}m
+        </Text>
+        <Text style={styles.statLabel}>Temps total</Text>
+      </View>
+      <View style={styles.statCard}>
+        <Ionicons name="trending-up-outline" size={24} color="#99f21c" />
+        <Text style={styles.statValue}>{user?.level}</Text>
+        <Text style={styles.statLabel}>Niveau</Text>
+      </View>
+      <View style={styles.statCard}>
+        <Ionicons name="trophy-outline" size={24} color="#99f21c" />
+        <Text style={styles.statValue}>#{user?.ladderRank}</Text>
+        <Text style={styles.statLabel}>Classement</Text>
+      </View>
+    </View>
+  );
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Profile</Text>
-      <View style={styles.table}>
-        {Object.entries(PROFILE_FIELDS).map(([key, { label, getValue }]) => (
-          <View key={key} style={styles.row}>
-            <Text style={styles.label}>{label}:</Text>
-            <Text style={styles.value}>{getValue(user)}</Text>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <View style={styles.header}>
+        <View style={styles.userInfo}>
+          <View style={styles.avatarContainer}>
+            <Text style={styles.avatarText}>
+              {user?.firstName?.[0]}{user?.lastName?.[0]}
+            </Text>
           </View>
-        ))}
+          <View style={styles.nameContainer}>
+            <Text style={styles.fullName}>{user?.firstName} {user?.lastName}</Text>
+            <Text style={styles.nickname}>@{user?.nickname}</Text>
+          </View>
+        </View>
       </View>
 
+      {renderXPGauge()}
+      {renderLeagueInfo()}
+      {renderStats()}
+      {renderLanguages()}
+
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.buttonText}>Déconnexion</Text>
+        <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
+        <Text style={styles.logoutText}>Déconnexion</Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: 'black',
+    backgroundColor: '#000000',
   },
-  title: {
+  header: {
+    padding: 20,
+    paddingTop: 40,
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#222222',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#99f21c',
+  },
+  avatarText: {
+    color: '#99f21c',
+    fontSize: 32,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
+  },
+  nameContainer: {
+    marginLeft: 16,
+  },
+  fullName: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
-    color: 'white',
-    textAlign: 'center',
+    color: '#FFFFFF',
+    fontFamily: 'monospace',
   },
-  table: {
-    flex: 1,
+  nickname: {
+    fontSize: 16,
+    color: '#666666',
+    fontFamily: 'monospace',
   },
-  row: {
+  xpGaugeContainer: {
+    padding: 20,
+    backgroundColor: '#111111',
+    marginHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  xpInfo: {
     flexDirection: 'row',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
-  label: {
+  xpText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'monospace',
+  },
+  xpNumbers: {
+    color: '#99f21c',
+    fontSize: 14,
+    fontFamily: 'monospace',
+  },
+  gaugeBackground: {
+    height: 8,
+    backgroundColor: '#222222',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  gaugeFill: {
+    height: '100%',
+    backgroundColor: '#99f21c',
+    borderRadius: 4,
+  },
+  leagueCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
+    marginHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  leagueIconContainer: {
+    marginRight: 16,
+  },
+  leagueInfo: {
     flex: 1,
-    fontSize: 16,
-    color: '#888',
   },
-  value: {
-    flex: 2,
+  leagueName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontFamily: 'monospace',
+  },
+  leagueRank: {
     fontSize: 16,
-    color: 'white',
+    color: '#999999',
+    fontFamily: 'monospace',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 20,
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: '#111111',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginVertical: 8,
+    fontFamily: 'monospace',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666666',
+    fontFamily: 'monospace',
+  },
+  languageCard: {
+    padding: 20,
+    backgroundColor: '#111111',
+    marginHorizontal: 20,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 16,
+    fontFamily: 'monospace',
+  },
+  languagesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  languageItem: {
+    alignItems: 'center',
+  },
+  languageFlag: {
+    fontSize: 32,
+    marginBottom: 8,
+  },
+  languageLabel: {
+    fontSize: 12,
+    color: '#666666',
+    fontFamily: 'monospace',
   },
   logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#FF4444',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 20,
+    marginHorizontal: 20,
+    marginVertical: 20,
+    padding: 16,
+    borderRadius: 12,
+    gap: 8,
   },
-  buttonText: {
-    color: 'white',
+  logoutText: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
-    textAlign: 'center',
+    fontFamily: 'monospace',
   },
 });

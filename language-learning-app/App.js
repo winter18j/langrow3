@@ -7,6 +7,8 @@ import { Provider } from 'react-redux';
 import { store } from './src/redux/store';
 import { useSelector } from 'react-redux';
 import { selectLoggedIn } from './src/redux/slices/authSlice';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
 
 
 
@@ -15,8 +17,11 @@ const LoginScreen = lazy(() => import('./src/screens/LoginScreen'));
 const RegisterScreen = lazy(() => import('./src/screens/RegisterScreen'));
 const MapScreen = lazy(() => import('./src/screens/MapScreen'));
 const ProfileScreen = lazy(() => import('./src/screens/ProfileScreen'));
+const GamesScreen = lazy(() => import('./src/screens/GamesScreen'));
+const LeaderboardScreen = lazy(() => import('./src/screens/LeaderboardScreen'));
 
 const Stack = createStackNavigator();
+const Tab = createBottomTabNavigator();
 Text.defaultProps = Text.defaultProps || {};
 Text.defaultProps.style = { fontFamily: 'monospace' };
 
@@ -67,33 +72,81 @@ const AuthNavigator = () => (
 
 
 const MainNavigator = () => (
-  <Stack.Navigator
+  <Tab.Navigator
     screenOptions={{
       headerShown: false,
-      headerStyle: {
-        backgroundColor: '#000',
+      tabBarStyle: {
+        backgroundColor: '#000000',
+        borderTopColor: '#333333',
+        height: 60,
+        paddingBottom: 8,
+        paddingTop: 8,
       },
-      headerTintColor: '#fff',
-      headerTitleStyle: {
-        fontWeight: 'bold',
+      tabBarActiveTintColor: '#99f21c',
+      tabBarInactiveTintColor: '#666666',
+      tabBarLabelStyle: {
+        fontSize: 12,
+        fontFamily: 'monospace',
       },
     }}
   >
-    <Stack.Screen name="Map">
-      {(props) => (
-        <Suspense fallback={<LoadingScreen />}>
-          <MapScreen {...props} />
-        </Suspense>
-      )}
-    </Stack.Screen>
-    <Stack.Screen name="Profile">
-      {(props) => (
-        <Suspense fallback={<LoadingScreen />}>
-          <ProfileScreen {...props} />
-        </Suspense>
-      )}
-    </Stack.Screen>
-  </Stack.Navigator>
+    <Tab.Screen
+      name="Map"
+      component={MapScreen}
+      options={{
+        tabBarIcon: ({ focused, color }) => (
+          <Ionicons
+            name={focused ? 'map' : 'map-outline'}
+            size={24}
+            color={color}
+          />
+        ),
+        tabBarLabel: 'Carte'
+      }}
+    />
+    <Tab.Screen
+      name="Games"
+      component={GamesScreen}
+      options={{
+        tabBarIcon: ({ focused, color }) => (
+          <Ionicons
+            name={focused ? 'game-controller' : 'game-controller-outline'}
+            size={24}
+            color={color}
+          />
+        ),
+        tabBarLabel: 'Jeux'
+      }}
+    />
+    <Tab.Screen
+      name="Leaderboard"
+      component={LeaderboardScreen}
+      options={{
+        tabBarIcon: ({ focused, color }) => (
+          <Ionicons
+            name={focused ? 'trophy' : 'trophy-outline'}
+            size={24}
+            color={color}
+          />
+        ),
+        tabBarLabel: 'Classement'
+      }}
+    />
+    <Tab.Screen
+      name="Profile"
+      component={ProfileScreen}
+      options={{
+        tabBarIcon: ({ focused, color }) => (
+          <Ionicons
+            name={focused ? 'person' : 'person-outline'}
+            size={24}
+            color={color}
+          />
+        ),
+        tabBarLabel: 'Profil'
+      }}
+    />
+  </Tab.Navigator>
 );
 
 

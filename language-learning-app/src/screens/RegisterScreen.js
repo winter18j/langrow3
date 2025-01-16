@@ -1,50 +1,54 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Dimensions
+} from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { registerUser, clearError } from '../redux/slices/authSlice';
-import { LanguageSelector } from '../components/LanguageSelector.js';
-import { Language } from '../enums/language.enum.js';
-import * as Location from 'expo-location';
+import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
+import { Language } from '../enums/language.enum';
+
+const LANGUAGE_FLAGS = {
+  fr: '🇫🇷',
+  en: '🇬🇧',
+  sp: '🇪🇸',
+  de: '🇩🇪',
+  it: '🇮🇹',
+  pt: '🇵🇹',
+  zh: '🇨🇳',
+  ja: '🇯🇵',
+  ko: '🇰🇷'
+};
+
+const { width } = Dimensions.get('window');
 
 export default function RegisterScreen({ navigation }) {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
+    confirmPassword: '',
     firstName: '',
     lastName: '',
     nickname: '',
-    mainLanguage: Language.FRENCH, // Default value
-    learnedLanguage: Language.ENGLISH, // Default value
-    location: {
-      type: 'Point',
-      coordinates: [0, 0] // Will be updated with actual location
-    }
+    mainLanguage: 'fr',
+    learnedLanguage: 'en',
   });
-  
-
-
+  const [showPassword, setShowPassword] = useState(false);
+  const [focusedInput, setFocusedInput] = useState(null);
   const dispatch = useDispatch();
   const { loading, error } = useSelector(state => state.auth);
 
   useEffect(() => {
     dispatch(clearError());
-    // Here you would typically get the user's location
-    // You'll need to implement location permissions and retrieval
-    const getLocation = async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission to access location was denied');
-        return;
-      }
-
-      let location = await Location.getCurrentPositionAsync({});
-      setFormData(prev => ({
-        ...prev,
-        location: `${location.coords.latitude},${location.coords.longitude}`
-      }));
-    };
-
-    getLocation();
   }, []);
 
   useEffect(() => {
@@ -53,179 +57,276 @@ export default function RegisterScreen({ navigation }) {
     }
   }, [error]);
 
-  const handleChange = (name, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
   const handleRegister = async () => {
-    // Basic validation
-    const requiredFields = ['email', 'password', 'firstName', 'lastName', 'nickname'];
-    const missingFields = requiredFields.filter(field => !formData[field]);
-    
-    if (missingFields.length > 0) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs obligatoires');
+    if (formData.password !== formData.confirmPassword) {
+      Alert.alert('Erreur', 'Les mots de passe ne correspondent pas');
+      return;
+    }
+
+    if (Object.values(formData).some(value => !value)) {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
       return;
     }
 
     try {
-      console.log('Registering user:', formData);
-      const resultAction = await dispatch(registerUser(formData)).unwrap();
+      const userData = {
+        ...formData,
+        location: '48.8566,2.3522' // Default to Paris for now
+      };
+      delete userData.confirmPassword;
+      
+      const resultAction = await dispatch(registerUser(userData)).unwrap();
       if (resultAction.access_token) {
         navigation.navigate('Map');
       }
     } catch (err) {
       console.error('Registration failed:', err);
-      alert('Erreur lors de l\'inscription, veuillez réssayer plus tard.');
     }
   };
 
+  const renderInputIcon = (iconName, isFocused) => (
+    <View style={styles.inputIcon}>
+      <Ionicons 
+        name={iconName} 
+        size={20} 
+        color={isFocused ? '#99f21c' : '#666666'} 
+      />
+    </View>
+  );
+
+  const renderInput = (field, placeholder, icon, keyboardType = 'default', secureTextEntry = false) => (
+    <View style={styles.inputGroup}>
+      <Text style={styles.inputLabel}>{placeholder}</Text>
+      <View style={[
+        styles.inputContainer,
+        focusedInput === field && styles.inputContainerFocused
+      ]}>
+        {renderInputIcon(icon, focusedInput === field)}
+        <TextInput
+          style={styles.input}
+          placeholder={`Votre ${placeholder.toLowerCase()}`}
+          placeholderTextColor="#666666"
+          value={formData[field]}
+          onChangeText={(text) => setFormData({ ...formData, [field]: text })}
+          secureTextEntry={secureTextEntry && !showPassword}
+          keyboardType={keyboardType}
+          autoCapitalize={keyboardType === 'email-address' ? 'none' : 'words'}
+          onFocus={() => setFocusedInput(field)}
+          onBlur={() => setFocusedInput(null)}
+        />
+        {secureTextEntry && (
+          <TouchableOpacity 
+            style={styles.showPasswordButton}
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            <Ionicons 
+              name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
+              size={20} 
+              color="#666666" 
+            />
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+
+  const renderLanguagePicker = (field, label) => (
+    <View style={styles.inputGroup}>
+      <Text style={styles.inputLabel}>{label}</Text>
+      <View style={styles.pickerContainer}>
+        <Picker
+          selectedValue={formData[field]}
+          onValueChange={(value) => setFormData({ ...formData, [field]: value })}
+          style={styles.picker}
+          dropdownIconColor="#666666"
+        >
+          {Object.entries(Language).map(([key, value]) => (
+            <Picker.Item 
+              key={value} 
+              label={`${LANGUAGE_FLAGS[value]} ${key}`} 
+              value={value} 
+              color="#FFFFFF"
+            />
+          ))}
+        </Picker>
+      </View>
+    </View>
+  );
+
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Créer un compte</Text>
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#000"
-        value={formData.email}
-        onChangeText={(value) => handleChange('email', value)}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Mot de passe"
-        placeholderTextColor="#000"
-        secureTextEntry
-        value={formData.password}
-        onChangeText={(value) => handleChange('password', value)}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Prénom"
-        placeholderTextColor="#000"
-        value={formData.firstName}
-        onChangeText={(value) => handleChange('firstName', value)}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Nom"
-        placeholderTextColor="#000"
-        value={formData.lastName}
-        onChangeText={(value) => handleChange('lastName', value)}
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Pseudo"
-        placeholderTextColor="#000"
-        value={formData.nickname}
-        onChangeText={(value) => handleChange('nickname', value)}
-      />
-      
-      <LanguageSelector
-        value={formData.mainLanguage}
-        onValueChange={(value) => handleChange('mainLanguage', value)}
-        label="Langue maternelle"
-      />
-
-      <LanguageSelector
-        value={formData.learnedLanguage}
-        onValueChange={(value) => handleChange('learnedLanguage', value)}
-        label="Langue apprise"
-      />
-
-      <TouchableOpacity 
-        style={[styles.buttonreg, loading && styles.buttonDisabled]} 
-        onPress={handleRegister}
-        disabled={loading}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.buttonText}>
-          {loading ? "Chargement..." : "S'inscrire"}
-        </Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity 
-        style={styles.button} 
-        onPress={() => navigation.goBack()}
-      >
-        <Text style={styles.buttonText}>Retour</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <View style={styles.headerContainer}>
+          <Text style={styles.title}>Créer un compte</Text>
+          <Text style={styles.subtitle}>Rejoignez la communauté LangRow</Text>
+        </View>
+
+        <View style={styles.formContainer}>
+          {renderInput('firstName', 'Prénom', 'person-outline')}
+          {renderInput('lastName', 'Nom', 'people-outline')}
+          {renderInput('nickname', 'Pseudo', 'at-outline')}
+          {renderInput('email', 'Email', 'mail-outline', 'email-address')}
+          {renderInput('password', 'Mot de passe', 'lock-closed-outline', 'default', true)}
+          {renderInput('confirmPassword', 'Confirmer le mot de passe', 'lock-closed-outline', 'default', true)}
+          
+          {renderLanguagePicker('mainLanguage', 'Langue maternelle')}
+          {renderLanguagePicker('learnedLanguage', 'Langue à apprendre')}
+
+          <TouchableOpacity
+            style={[styles.registerButton, loading && styles.registerButtonDisabled]}
+            onPress={handleRegister}
+            disabled={loading}
+          >
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <Ionicons name="sync" size={24} color="#000000" style={styles.loadingIcon} />
+                <Text style={styles.buttonText}>Chargement...</Text>
+              </View>
+            ) : (
+              <>
+                <Ionicons name="person-add-outline" size={24} color="#000000" />
+                <Text style={styles.buttonText}>S'inscrire</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            Déjà un compte ?{' '}
+            <Text
+              style={styles.loginLink}
+              onPress={() => navigation.navigate('LoginScreen')}
+            >
+              Connectez-vous ici
+            </Text>
+          </Text>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#000',
+    backgroundColor: '#000000',
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
+  },
+  headerContainer: {
+    marginBottom: 40,
   },
   title: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 8,
+    fontFamily: 'monospace',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666666',
+    fontFamily: 'monospace',
+  },
+  formContainer: {
     marginBottom: 20,
-    marginTop: 40,
-    textAlign: 'center',
-    color: '#fff',
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    marginBottom: 8,
+    fontFamily: 'monospace',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#111111',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#333333',
+    paddingHorizontal: 16,
+    height: 56,
+  },
+  inputContainerFocused: {
+    borderColor: '#99f21c',
+  },
+  inputIcon: {
+    marginRight: 12,
   },
   input: {
-    backgroundColor: '#fff',
-    color: '#000',
+    flex: 1,
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'monospace',
+  },
+  showPasswordButton: {
+    padding: 8,
+  },
+  pickerContainer: {
+    backgroundColor: '#111111',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#fff',
-    padding: 15,
-    marginBottom: 15,
-    borderRadius: 5,
-    width: '100%',
+    borderColor: '#333333',
+    height: 56,
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
-  button: {
-    backgroundColor: '#fff',
-    paddingVertical: 15,
+  picker: {
+    color: '#FFFFFF',
+    backgroundColor: 'transparent',
+  },
+  registerButton: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '100%',
-    marginTop: 10,
-    borderRadius: 5,
+    backgroundColor: '#99f21c',
+    borderRadius: 12,
+    height: 56,
+    marginTop: 20,
+    gap: 8,
   },
-  buttonreg: {
-    backgroundColor: '#fff',
-    paddingVertical: 10,
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    marginTop: 10,
-    borderRadius: 0,
-  },
-  buttonDisabled: {
+  registerButtonDisabled: {
     opacity: 0.7,
   },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  loadingIcon: {
+    transform: [{ rotate: '0deg' }],
+  },
   buttonText: {
-    color: '#000',
+    color: '#000000',
     fontSize: 16,
     fontWeight: 'bold',
+    fontFamily: 'monospace',
   },
-  registerText: {
-    textAlign: 'center',
-    marginTop: 15,
-    color: '#fff',
+  footer: {
+    alignItems: 'center',
+    marginTop: 20,
   },
-  registerLink: {
+  footerText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'monospace',
+  },
+  loginLink: {
     color: '#99f21c',
     textDecorationLine: 'underline',
-  },
-  simulateLink: {
-    color: '#99f21c',
-    textDecorationLine: 'underline',
-    position: 'absolute',
-    bottom: 10,
-    right: 10,
   },
 });

@@ -1,16 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Dimensions,
+  ScrollView
+} from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { loginUser, clearError } from '../redux/slices/authSlice';
+import { Ionicons } from '@expo/vector-icons';
+
+const { width } = Dimensions.get('window');
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isEmailFocused, setIsEmailFocused] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const dispatch = useDispatch();
   const { loading, error } = useSelector(state => state.auth);
 
   useEffect(() => {
-    // Clear any previous errors when component mounts
     dispatch(clearError());
   }, []);
 
@@ -28,121 +44,221 @@ export default function LoginScreen({ navigation }) {
 
     try {
       const resultAction = await dispatch(loginUser({ email, password })).unwrap();
-      console.log('Login log: ', resultAction);
       if (resultAction.access_token) {
         navigation.navigate('Map');
       }
     } catch (err) {
-      // Error is handled by the redux slice
       console.error('Login failed:', err);
     }
   };
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Se connecter</Text>
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#000"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-      
-      <TextInput
-        style={styles.input}
-        placeholder="Mot de passe"
-        placeholderTextColor="#000"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-      
-      <TouchableOpacity 
-        style={[styles.button, loading && styles.buttonDisabled]} 
-        onPress={handleLogin}
-        disabled={loading}
-      >
-        <Text style={styles.buttonText}>
-          {loading ? 'Chargement...' : 'Se connecter'}
-        </Text>
-      </TouchableOpacity>
-
-      <Text style={styles.registerText}>
-        Pas encore de compte?{' '}
-        <Text
-          style={styles.registerLink}
-          onPress={() => navigation.navigate('RegisterScreen')}
-        >
-          Inscrivez-vous ici
-        </Text>
-      </Text>
-
-      <Text 
-        style={styles.simulateLink} 
-        onPress={() => navigation.navigate('Map')}
-      >
-        Simuler le jeu ici
-      </Text>
+  const renderInputIcon = (iconName, color = '#666666') => (
+    <View style={styles.inputIcon}>
+      <Ionicons name={iconName} size={20} color={color} />
     </View>
+  );
+
+  return (
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.headerContainer}>
+          <Text style={styles.welcomeText}>Bienvenue</Text>
+          <Text style={styles.subtitle}>Connectez-vous pour continuer</Text>
+        </View>
+
+        <View style={styles.formContainer}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Email</Text>
+            <View style={[
+              styles.inputContainer,
+              isEmailFocused && styles.inputContainerFocused
+            ]}>
+              {renderInputIcon('mail-outline', isEmailFocused ? '#99f21c' : '#666666')}
+              <TextInput
+                style={styles.input}
+                placeholder="Votre email"
+                placeholderTextColor="#666666"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                onFocus={() => setIsEmailFocused(true)}
+                onBlur={() => setIsEmailFocused(false)}
+              />
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Mot de passe</Text>
+            <View style={[
+              styles.inputContainer,
+              isPasswordFocused && styles.inputContainerFocused
+            ]}>
+              {renderInputIcon('lock-closed-outline', isPasswordFocused ? '#99f21c' : '#666666')}
+              <TextInput
+                style={styles.input}
+                placeholder="Votre mot de passe"
+                placeholderTextColor="#666666"
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+                onFocus={() => setIsPasswordFocused(true)}
+                onBlur={() => setIsPasswordFocused(false)}
+              />
+              <TouchableOpacity 
+                style={styles.showPasswordButton}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Ionicons 
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
+                  size={20} 
+                  color="#666666" 
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <TouchableOpacity 
+            style={[styles.loginButton, loading && styles.loginButtonDisabled]} 
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <Ionicons name="sync" size={24} color="#000000" style={styles.loadingIcon} />
+                <Text style={styles.buttonText}>Chargement...</Text>
+              </View>
+            ) : (
+              <>
+                <Ionicons name="log-in-outline" size={24} color="#000000" />
+                <Text style={styles.buttonText}>Se connecter</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>
+            Pas encore de compte ?{' '}
+            <Text
+              style={styles.registerLink}
+              onPress={() => navigation.navigate('RegisterScreen')}
+            >
+              Inscrivez-vous ici
+            </Text>
+          </Text>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    padding: 20,
-    backgroundColor: '#000',
+    backgroundColor: '#000000',
   },
-  title: {
-    fontSize: 24,
+  scrollContainer: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
+  },
+  headerContainer: {
+    marginBottom: 40,
+  },
+  welcomeText: {
+    fontSize: 36,
     fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 8,
+    fontFamily: 'monospace',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666666',
+    fontFamily: 'monospace',
+  },
+  formContainer: {
+    marginBottom: 40,
+  },
+  inputGroup: {
     marginBottom: 20,
-    textAlign: 'center',
-    color: '#fff',
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    marginBottom: 8,
+    fontFamily: 'monospace',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#111111',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#333333',
+    paddingHorizontal: 16,
+    height: 56,
+  },
+  inputContainerFocused: {
+    borderColor: '#99f21c',
+  },
+  inputIcon: {
+    marginRight: 12,
   },
   input: {
-    backgroundColor: '#fff',
-    color: '#000',
-    borderWidth: 1,
-    borderColor: '#fff',
-    padding: 15,
-    marginBottom: 15,
-    borderRadius: 5,
-    width: '100%',
+    flex: 1,
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'monospace',
   },
-  button: {
-    backgroundColor: '#fff',
-    paddingVertical: 15,
+  showPasswordButton: {
+    padding: 8,
+  },
+  loginButton: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '100%',
-    marginTop: 10,
-    borderRadius: 5,
+    backgroundColor: '#99f21c',
+    borderRadius: 12,
+    height: 56,
+    marginTop: 20,
+    gap: 8,
+  },
+  loginButtonDisabled: {
+    opacity: 0.7,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  loadingIcon: {
+    transform: [{ rotate: '0deg' }],
   },
   buttonText: {
-    color: '#000',
+    color: '#000000',
     fontSize: 16,
     fontWeight: 'bold',
+    fontFamily: 'monospace',
   },
-  registerText: {
-    textAlign: 'center',
-    marginTop: 15,
-    color: '#fff',
+  footer: {
+    alignItems: 'center',
+  },
+  footerText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'monospace',
   },
   registerLink: {
     color: '#99f21c',
     textDecorationLine: 'underline',
-  },
-  simulateLink: {
-    color: '#99f21c',
-    textDecorationLine: 'underline',
-    position: 'absolute',
-    bottom: 10,
-    right: 10,
   },
 });
