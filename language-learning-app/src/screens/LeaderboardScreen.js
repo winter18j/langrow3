@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Image, ActivityIndicator, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { useSelector } from 'react-redux';
@@ -51,8 +51,9 @@ export default function LeaderboardScreen() {
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
   const token = useSelector((state) => state.auth.token);
-  const API_URL = 'http://192.168.0.134:3000';
+  const API_URL = 'http://192.168.0.5:3000';
 
   useEffect(() => {
     fetchLeaderboard();
@@ -71,6 +72,15 @@ export default function LeaderboardScreen() {
       setLoading(false);
     }
   };
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchLeaderboard();
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   const renderLanguages = (mainLang, learnedLang) => {
     return (
@@ -142,6 +152,15 @@ export default function LeaderboardScreen() {
         keyExtractor={(item) => item._id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#99f21c"
+            colors={["#99f21c"]}
+            progressBackgroundColor="#222222"
+          />
+        }
       />
     </View>
   );

@@ -1,10 +1,11 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, RefreshControl } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
 import { Ionicons } from '@expo/vector-icons';
 import { Language } from '../enums/language.enum';
 import { League } from '../enums/league.enum';
+import axios from 'axios';
 
 const LANGUAGE_FLAGS = {
   fr: '🇫🇷',
@@ -41,6 +42,33 @@ const { width } = Dimensions.get('window');
 export default function ProfileScreen({ navigation }) {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.auth.user);
+  const token = useSelector((state) => state.auth.token);
+  const [refreshing, setRefreshing] = useState(false);
+  const API_URL = 'http://192.168.0.5:3000';
+
+  const fetchProfileData = async () => {
+    try {
+      const response = await axios.get(
+        `${API_URL}/users/${user._id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      // Update the user data in Redux if needed
+      // For now, we'll just refresh the page
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchProfileData();
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -118,7 +146,19 @@ export default function ProfileScreen({ navigation }) {
   );
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={styles.container} 
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor="#99f21c"
+          colors={["#99f21c"]}
+          progressBackgroundColor="#222222"
+        />
+      }
+    >
       <View style={styles.header}>
         <View style={styles.userInfo}>
           <View style={styles.avatarContainer}>
