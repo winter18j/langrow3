@@ -49,7 +49,8 @@ export class UserService {
   }
 
   async findAll(): Promise<UserDocument[]> {
-    return this.userModel.find().exec();
+    await this.updateRanks();
+    return this.userModel.find().sort({ level: -1, xpToNextLevel: -1 }).exec();
   }
 
   async findOne(id: string): Promise<UserDocument> {
@@ -57,6 +58,12 @@ export class UserService {
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
+
+    if (!user.ladderRank || user.ladderRank === 0) {
+      await this.updateRanks();
+      return this.userModel.findById(id).exec();
+    }
+
     return user;
   }
 
@@ -86,6 +93,19 @@ export class UserService {
     return updatedUser;
   }
 
+  async updateRanks(): Promise<void> {
+    const allUsers = await this.userModel.find().sort({ level: -1, xpToNextLevel: -1 }).exec();
+    
+    const updateOperations = allUsers.map((user, index) => ({
+      updateOne: {
+        filter: { _id: user._id },
+        update: { $set: { ladderRank: index + 1 } }
+      }
+    }));
+
+    await this.userModel.bulkWrite(updateOperations);
+  }
+
   async updateGameStats(
     id: string,
     xpGained: number,
@@ -110,16 +130,8 @@ export class UserService {
     // Save the user first to ensure their new level is recorded
     await user.save();
 
-    // Update ladder ranks for all users
-    const allUsers = await this.userModel.find().sort({ level: -1, xpToNextLevel: -1 }).exec();
-    const updateOperations = allUsers.map((user, index) => ({
-      updateOne: {
-        filter: { _id: user._id },
-        update: { $set: { ladderRank: index + 1 } }
-      }
-    }));
-
-    await this.userModel.bulkWrite(updateOperations);
+    // Update ranks for all users
+    await this.updateRanks();
 
     // Fetch and return the updated user
     return this.findOne(id);
