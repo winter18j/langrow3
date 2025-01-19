@@ -59,6 +59,87 @@ export class User {
 
   @Prop({ required: true, default: 0 })
   timeSpentLearning: number;
+
+  @Prop({ default: 0 })
+  xp: number;
+
+  @Prop({ default: 0 })
+  totalTimeSpent: number;
+
+  @Prop({ default: 0 })
+  totalGamesPlayed: number;
+
+  @Prop({ default: 0 })
+  totalGamesWon: number;
+
+  @Prop({ default: 0 })
+  totalGamesLost: number;
+
+  @Prop({ default: 0 })
+  winStreak: number;
+
+  @Prop({ default: 0 })
+  bestWinStreak: number;
+
+  @Prop({ default: 0 })
+  totalXpGained: number;
+
+  @Prop({ default: 0 })
+  totalXpLost: number;
+
+  @Prop({ default: 0 })
+  totalXpSpent: number;
+
+  @Prop({ default: 0 })
+  totalXpEarned: number;
+
+  @Prop({ default: 0 })
+  totalXpBalance: number;
+
+  @Prop({ default: 0 })
+  totalXpGainedToday: number;
+
+  @Prop({ default: 0 })
+  totalXpLostToday: number;
+
+  @Prop({ default: 0 })
+  totalXpSpentToday: number;
+
+  @Prop({ default: 0 })
+  totalXpEarnedToday: number;
+
+  @Prop({ default: 0 })
+  totalXpBalanceToday: number;
+
+  @Prop({ default: 0 })
+  totalTimeSpentToday: number;
+
+  @Prop({ default: 0 })
+  totalGamesPlayedToday: number;
+
+  @Prop({ default: 0 })
+  totalGamesWonToday: number;
+
+  @Prop({ default: 0 })
+  totalGamesLostToday: number;
+
+  @Prop({ default: 0 })
+  winStreakToday: number;
+
+  @Prop({ default: 0 })
+  bestWinStreakToday: number;
+
+  @Prop({ default: Date.now })
+  lastActive: Date;
+
+  @Prop({ default: Date.now })
+  createdAt: Date;
+
+  @Prop({ default: Date.now })
+  updatedAt: Date;
+
+  @Prop({ default: null })
+  fcmToken: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

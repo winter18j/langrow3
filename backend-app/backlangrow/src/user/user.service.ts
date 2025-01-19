@@ -7,11 +7,13 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { GeoLocation } from './interfaces/location.interface';
 import { League } from './enums/league.enum';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class UserService {
   constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserDocument> {
@@ -41,7 +43,24 @@ export class UserService {
       location: geoLocation
     });
 
-    return newUser.save();
+    const savedUser = await newUser.save();
+
+    // Notify users learning the same language
+    const usersWithSameLanguage = await this.userModel.find({
+      learnedLanguage: savedUser.learnedLanguage,
+      _id: { $ne: savedUser._id },
+      fcmToken: { $exists: true, $ne: null },
+    });
+
+    if (usersWithSameLanguage.length > 0) {
+      const fcmTokens = usersWithSameLanguage.map(user => user.fcmToken);
+      await this.notificationsService.sendNewUserNotification(
+        savedUser.learnedLanguage,
+        fcmTokens,
+      );
+    }
+
+    return savedUser;
   }
 
   async findByEmail(email: string): Promise<UserDocument | null> {
@@ -143,5 +162,13 @@ export class UserService {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
     return deletedUser;
+  }
+
+  async updateFcmToken(userId: string, fcmToken: string): Promise<UserDocument> {
+    return this.userModel.findByIdAndUpdate(
+      userId,
+      { fcmToken },
+      { new: true },
+    );
   }
 }

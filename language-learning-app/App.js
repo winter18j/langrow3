@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -9,6 +9,7 @@ import { useSelector } from 'react-redux';
 import { selectLoggedIn } from './src/redux/slices/authSlice';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import NotificationService from './src/services/NotificationService';
 
 
 
@@ -175,6 +176,15 @@ const MainNavigator = () => {
 
 const RootNavigator = () => {
   const isLoggedIn = useSelector(selectLoggedIn);
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      NotificationService.init().catch(error => {
+        console.error('Failed to initialize notifications:', error);
+      });
+    }
+  }, [isLoggedIn]);
+
   return isLoggedIn ? <MainNavigator /> : <AuthNavigator />;
 };
 

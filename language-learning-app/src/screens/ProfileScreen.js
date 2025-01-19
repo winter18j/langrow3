@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, RefreshControl, Modal, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, RefreshControl, Modal, Animated, Alert } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout, updateUserData } from '../redux/slices/authSlice';
 import { Ionicons } from '@expo/vector-icons';
@@ -89,6 +89,28 @@ export default function ProfileScreen({ navigation }) {
       setLanguageModalVisible(false);
     } catch (error) {
       console.error('Error updating language:', error);
+    }
+  };
+
+  const handleDevLevelUp = async () => {
+    try {
+      const response = await axios.patch(
+        `${API_URL}/users/${user._id}/game-stats`,
+        {
+          xpGained: 100 * user.level, // Enough XP to level up
+          timeSpent: 60 // 1 minute of time
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      if (response.data) {
+        dispatch(updateUserData(user._id));
+      }
+    } catch (error) {
+      console.error('Error leveling up:', error);
+      Alert.alert('Error', 'Failed to level up');
     }
   };
 
@@ -273,6 +295,17 @@ export default function ProfileScreen({ navigation }) {
         {renderXPGauge()}
         {renderLeagueInfo()}
         {renderStats()}
+
+        {__DEV__ && (
+          <TouchableOpacity 
+            style={styles.devButton}
+            onPress={handleDevLevelUp}
+          >
+            <Ionicons name="trending-up" size={24} color="#000000" />
+            <Text style={styles.devButtonText}>DEV: Level Up</Text>
+          </TouchableOpacity>
+        )}
+
         {renderLanguages()}
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -507,5 +540,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'monospace',
     flex: 1,
+  },
+  devButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#99f21c',
+    marginHorizontal: 20,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  devButtonText: {
+    color: '#000000',
+    fontSize: 16,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
   },
 });

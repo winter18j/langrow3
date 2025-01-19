@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
+import NotificationService from '../../services/NotificationService';
 
 const API_URL = 'http://192.168.0.5:3000';
 
@@ -26,11 +27,36 @@ export const updateUserData = createAsyncThunk(
   }
 );
 
+export const updatePushToken = createAsyncThunk(
+  'auth/updatePushToken',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { token, user } = getState().auth;
+      if (!user?._id) return;
+
+      const pushToken = await NotificationService.getExpoPushToken();
+      if (!pushToken) return;
+
+      await axios.patch(
+        `${API_URL}/users/${user._id}`,
+        { fcmToken: pushToken }, // We keep the field name as fcmToken for backend compatibility
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      return pushToken;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to update push token');
+    }
+  }
+);
+
 export const loginUser = createAsyncThunk(
   'auth/login',
-  async (credentials, { rejectWithValue }) => {
+  async (credentials, { dispatch, rejectWithValue }) => {
     try {
       const response = await axios.post(`${API_URL}/auth/login`, credentials);
+      // After successful login, update push token
+      dispatch(updatePushToken());
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Login failed');
@@ -40,9 +66,11 @@ export const loginUser = createAsyncThunk(
 
 export const registerUser = createAsyncThunk(
   'auth/register',
-  async (userData, { rejectWithValue }) => {
+  async (userData, { dispatch, rejectWithValue }) => {
     try {
       const response = await axios.post(`${API_URL}/auth/register`, userData);
+      // After successful registration, update push token
+      dispatch(updatePushToken());
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Registration failed');
@@ -99,6 +127,11 @@ const authSlice = createSlice({
       })
       .addCase(updateUserData.fulfilled, (state, action) => {
         state.user = action.payload;
+      })
+      .addCase(updatePushToken.fulfilled, (state, action) => {
+        if (state.user && action.payload) {
+          state.user.fcmToken = action.payload;
+        }
       });
   },
 });
