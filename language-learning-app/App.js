@@ -21,6 +21,7 @@ const ProfileScreen = lazy(() => import('./src/screens/ProfileScreen'));
 const GamesScreen = lazy(() => import('./src/screens/GamesScreen'));
 const LeaderboardScreen = lazy(() => import('./src/screens/LeaderboardScreen'));
 const WordToWordGameScreen = lazy(() => import('./src/screens/WordToWordGameScreen'));
+const FillInBlanksScreen = lazy(() => import('./src/screens/FillInBlanksScreen'));
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -166,6 +167,13 @@ const MainNavigator = () => {
         {(props) => (
           <Suspense fallback={<LoadingScreen />}>
             <WordToWordGameScreen {...props} />
+          </Suspense>
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="FillInBlanks">
+        {(props) => (
+          <Suspense fallback={<LoadingScreen />}>
+            <FillInBlanksScreen {...props} />
           </Suspense>
         )}
       </Stack.Screen>

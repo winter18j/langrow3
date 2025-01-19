@@ -9,6 +9,7 @@ import { UserModule } from './user/user.module';
 import { WordPairsModule } from './word-pairs/word-pairs.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { NotificationsScheduler } from './notifications/notifications.scheduler';
+import { FillInBlanksModule } from './fill-in-blanks/fill-in-blanks.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { NotificationsScheduler } from './notifications/notifications.scheduler'
     UserModule,
     WordPairsModule,
     NotificationsModule,
+    FillInBlanksModule,
   ],
   controllers: [AppController],
   providers: [AppService, NotificationsScheduler],
