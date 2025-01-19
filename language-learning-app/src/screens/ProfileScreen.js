@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Dimensions, RefreshControl, Modal, Animated } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
-import { logout } from '../redux/slices/authSlice';
+import { logout, updateUserData } from '../redux/slices/authSlice';
 import { Ionicons } from '@expo/vector-icons';
 import { Language } from '../enums/language.enum';
 import { League } from '../enums/league.enum';
@@ -44,18 +44,17 @@ export default function ProfileScreen({ navigation }) {
   const user = useSelector((state) => state.auth.user);
   const token = useSelector((state) => state.auth.token);
   const [refreshing, setRefreshing] = useState(false);
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const [selectedLanguageType, setSelectedLanguageType] = useState(null); // 'main' or 'learned'
   const API_URL = 'http://192.168.0.5:3000';
+  const [xpAnimation] = useState(new Animated.Value(0));
+  const [prevXp, setPrevXp] = useState(0);
 
   const fetchProfileData = async () => {
     try {
-      const response = await axios.get(
-        `${API_URL}/users/${user._id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
-      // Update the user data in Redux if needed
-      // For now, we'll just refresh the page
+      if (user?._id) {
+        await dispatch(updateUserData(user._id)).unwrap();
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
@@ -75,8 +74,43 @@ export default function ProfileScreen({ navigation }) {
     navigation.navigate('Login');
   };
 
+  const updateLanguage = async (language, type) => {
+    try {
+      await axios.patch(
+        `${API_URL}/users/${user._id}`,
+        {
+          [type === 'main' ? 'mainLanguage' : 'learnedLanguage']: language
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      dispatch(updateUserData(user._id));
+      setLanguageModalVisible(false);
+    } catch (error) {
+      console.error('Error updating language:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.xpToNextLevel !== prevXp) {
+      xpAnimation.setValue(0);
+      Animated.timing(xpAnimation, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: false,
+      }).start();
+      setPrevXp(user?.xpToNextLevel);
+    }
+  }, [user?.xpToNextLevel]);
+
   const renderXPGauge = () => {
     const xpPercentage = (user?.xpToNextLevel / (100 * user?.level)) * 100;
+    const animatedWidth = xpAnimation.interpolate({
+      inputRange: [0, 1],
+      outputRange: [`${prevXp / (100 * user?.level) * 100}%`, `${xpPercentage}%`],
+    });
+
     return (
       <View style={styles.xpGaugeContainer}>
         <View style={styles.xpInfo}>
@@ -84,7 +118,7 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.xpNumbers}>{user?.xpToNextLevel} / {100 * user?.level}</Text>
         </View>
         <View style={styles.gaugeBackground}>
-          <View style={[styles.gaugeFill, { width: `${xpPercentage}%` }]} />
+          <Animated.View style={[styles.gaugeFill, { width: animatedWidth }]} />
         </View>
       </View>
     );
@@ -106,19 +140,71 @@ export default function ProfileScreen({ navigation }) {
     </View>
   );
 
+  const renderLanguageModal = () => (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={languageModalVisible}
+      onRequestClose={() => setLanguageModalVisible(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>
+              {selectedLanguageType === 'main' ? 'Choisir la langue maternelle' : 'Choisir la langue à apprendre'}
+            </Text>
+            <TouchableOpacity
+              onPress={() => setLanguageModalVisible(false)}
+              style={styles.closeButton}
+            >
+              <Ionicons name="close" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.languageList}>
+            {Object.entries(Language).map(([name, code]) => (
+              <TouchableOpacity
+                key={code}
+                style={styles.languageOption}
+                onPress={() => updateLanguage(code, selectedLanguageType)}
+              >
+                <Text style={styles.languageFlag}>{LANGUAGE_FLAGS[code]}</Text>
+                <Text style={styles.languageName}>{name}</Text>
+                {(selectedLanguageType === 'main' ? user?.mainLanguage : user?.learnedLanguage) === code && (
+                  <Ionicons name="checkmark" size={24} color="#99f21c" />
+                )}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+
   const renderLanguages = () => (
     <View style={styles.languageCard}>
       <Text style={styles.sectionTitle}>Langues</Text>
       <View style={styles.languagesContainer}>
-        <View style={styles.languageItem}>
+        <TouchableOpacity 
+          style={styles.languageItem}
+          onPress={() => {
+            setSelectedLanguageType('main');
+            setLanguageModalVisible(true);
+          }}
+        >
           <Text style={styles.languageFlag}>{LANGUAGE_FLAGS[user?.mainLanguage]}</Text>
           <Text style={styles.languageLabel}>Langue maternelle</Text>
-        </View>
+        </TouchableOpacity>
         <Ionicons name="arrow-forward" size={24} color="#666666" />
-        <View style={styles.languageItem}>
+        <TouchableOpacity 
+          style={styles.languageItem}
+          onPress={() => {
+            setSelectedLanguageType('learned');
+            setLanguageModalVisible(true);
+          }}
+        >
           <Text style={styles.languageFlag}>{LANGUAGE_FLAGS[user?.learnedLanguage]}</Text>
           <Text style={styles.languageLabel}>Langue apprise</Text>
-        </View>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -145,44 +231,57 @@ export default function ProfileScreen({ navigation }) {
     </View>
   );
 
-  return (
-    <ScrollView 
-      style={styles.container} 
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor="#99f21c"
-          colors={["#99f21c"]}
-          progressBackgroundColor="#222222"
-        />
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      if (user?._id) {
+        dispatch(updateUserData(user._id));
       }
-    >
-      <View style={styles.header}>
-        <View style={styles.userInfo}>
-          <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>
-              {user?.firstName?.[0]}{user?.lastName?.[0]}
-            </Text>
-          </View>
-          <View style={styles.nameContainer}>
-            <Text style={styles.fullName}>{user?.firstName} {user?.lastName}</Text>
-            <Text style={styles.nickname}>@{user?.nickname}</Text>
+    });
+
+    return unsubscribe;
+  }, [navigation, user?._id]);
+
+  return (
+    <>
+      <ScrollView 
+        style={styles.container} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#99f21c"
+            colors={["#99f21c"]}
+            progressBackgroundColor="#222222"
+          />
+        }
+      >
+        <View style={styles.header}>
+          <View style={styles.userInfo}>
+            <View style={styles.avatarContainer}>
+              <Text style={styles.avatarText}>
+                {user?.firstName?.[0]}{user?.lastName?.[0]}
+              </Text>
+            </View>
+            <View style={styles.nameContainer}>
+              <Text style={styles.fullName}>{user?.firstName} {user?.lastName}</Text>
+              <Text style={styles.nickname}>@{user?.nickname}</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {renderXPGauge()}
-      {renderLeagueInfo()}
-      {renderStats()}
-      {renderLanguages()}
+        {renderXPGauge()}
+        {renderLeagueInfo()}
+        {renderStats()}
+        {renderLanguages()}
 
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
-        <Text style={styles.logoutText}>Déconnexion</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
+          <Text style={styles.logoutText}>Déconnexion</Text>
+        </TouchableOpacity>
+      </ScrollView>
+      {renderLanguageModal()}
+    </>
   );
 }
 
@@ -359,5 +458,54 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     fontFamily: 'monospace',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#111111',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#222222',
+  },
+  modalTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
+  },
+  closeButton: {
+    padding: 4,
+  },
+  languageList: {
+    padding: 20,
+  },
+  languageOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#222222',
+  },
+  languageFlag: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  languageName: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'monospace',
+    flex: 1,
   },
 });

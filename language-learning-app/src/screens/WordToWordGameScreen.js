@@ -11,23 +11,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector, useDispatch } from 'react-redux';
+import { fetchWordPairs } from '../redux/slices/wordPairsSlice';
+import { updateUserData } from '../redux/slices/authSlice';
 import axios from 'axios';
+import CustomAlert from '../components/CustomAlert';
 
 const { width, height } = Dimensions.get('window');
-
-// Sample word pairs for demonstration
-// In production, these would come from an API
-const WORD_PAIRS = [
-  { id: 1, word: 'Bonjour', translation: 'Hello', correct: true },
-  { id: 2, word: 'Maison', translation: 'House', correct: true },
-  { id: 3, word: 'Chat', translation: 'Cat', correct: true },
-  { id: 4, word: 'Chien', translation: 'Dog', correct: true },
-  { id: 5, word: 'Livre', translation: 'Book', correct: true },
-  // Incorrect pairs for challenge
-  { id: 6, word: 'Pain', translation: 'Water', correct: false },
-  { id: 7, word: 'Voiture', translation: 'Bicycle', correct: false },
-  { id: 8, word: 'Pomme', translation: 'Orange', correct: false },
-];
 
 export default function WordToWordGameScreen({ navigation }) {
   const [currentPair, setCurrentPair] = useState(null);
@@ -43,19 +32,109 @@ export default function WordToWordGameScreen({ navigation }) {
   const [scorePop] = useState(new Animated.Value(0));
   const [scoreOpacity] = useState(new Animated.Value(0));
   const [heartShake] = useState(new Animated.Value(0));
-  
+  const [winAnimation] = useState(new Animated.Value(0));
+  const [loseAnimation] = useState(new Animated.Value(0));
+  const [xpGaugeAnimation] = useState(new Animated.Value(0));
+
+  const dispatch = useDispatch();
   const user = useSelector(state => state.auth.user);
   const token = useSelector(state => state.auth.token);
+  const { pairs, status, error } = useSelector(state => state.wordPairs);
   const API_URL = 'http://192.168.0.5:3000';
 
+  const [alertConfig, setAlertConfig] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    buttons: []
+  });
+
   useEffect(() => {
-    startNewRound();
-  }, []);
+    console.log('User:', user);
+    console.log('Learned Language:', user?.learnedLanguage);
+    console.log('Main Language:', user?.mainLanguage);
+    // Fetch word pairs when component mounts
+    if (user?.learnedLanguage && user?.mainLanguage) {
+      console.log('Fetching word pairs for languages:', user.mainLanguage, user.learnedLanguage);
+      dispatch(fetchWordPairs({
+        sourceLanguage: user.mainLanguage,
+        targetLanguage: user.learnedLanguage
+      }));
+    } else {
+      console.log('Languages not set');
+      setAlertConfig({
+        visible: true,
+        title: 'Languages Not Set',
+        message: 'Please set both your main and learning languages in your profile first.',
+        buttons: [
+          {
+            text: 'Go to Profile',
+            icon: 'person',
+            onPress: () => navigation.navigate('Profile')
+          }
+        ]
+      });
+    }
+  }, [dispatch, user?.learnedLanguage, user?.mainLanguage]);
+
+  useEffect(() => {
+    console.log('Status:', status);
+    console.log('Pairs:', pairs);
+    console.log('Error:', error);
+    
+    if (status === 'succeeded' && pairs.length > 0) {
+      startNewRound();
+    } else if (status === 'succeeded' && pairs.length === 0) {
+      console.log('No word pairs available');
+      Alert.alert(
+        'No Words Available',
+        'No word pairs are available for your languages. Please try generating some first.',
+        [
+          {
+            text: 'Generate Words',
+            onPress: async () => {
+              try {
+                setLoading(true);
+                await axios.post(
+                  `${API_URL}/word-pairs/seed`,
+                  {},
+                  {
+                    params: {
+                      sourceLanguage: user.mainLanguage,
+                      targetLanguage: user.learnedLanguage
+                    }
+                  }
+                );
+                dispatch(fetchWordPairs({
+                  sourceLanguage: user.mainLanguage,
+                  targetLanguage: user.learnedLanguage
+                }));
+              } catch (error) {
+                console.error('Error generating words:', error);
+                Alert.alert('Error', 'Failed to generate word pairs');
+              } finally {
+                setLoading(false);
+              }
+            }
+          },
+          {
+            text: 'Cancel',
+            onPress: () => navigation.goBack(),
+            style: 'cancel'
+          }
+        ]
+      );
+    } else if (status === 'failed') {
+      Alert.alert('Error', error || 'Failed to fetch word pairs');
+    }
+  }, [status, pairs, error]);
 
   const startNewRound = () => {
+    if (pairs.length === 0) return;
+
     // Randomly select a word pair
-    const randomIndex = Math.floor(Math.random() * WORD_PAIRS.length);
-    const newPair = WORD_PAIRS[randomIndex];
+    const randomIndex = Math.floor(Math.random() * pairs.length);
+    const newPair = pairs[randomIndex];
 
     // Animate transition
     Animated.sequence([
@@ -175,72 +254,181 @@ export default function WordToWordGameScreen({ navigation }) {
     ]).start();
   };
 
+  const animateGameWin = () => {
+    winAnimation.setValue(0);
+    xpGaugeAnimation.setValue(0);
+    
+    Animated.sequence([
+      Animated.timing(winAnimation, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(winAnimation, {
+        toValue: 0,
+        duration: 300,
+        delay: 700,
+        useNativeDriver: true,
+      })
+    ]).start();
+  };
+
+  const animateGameLose = () => {
+    loseAnimation.setValue(0);
+    Animated.sequence([
+      Animated.timing(loseAnimation, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(loseAnimation, {
+        toValue: 0,
+        duration: 300,
+        delay: 700,
+        useNativeDriver: true,
+      })
+    ]).start();
+  };
+
+  const handleGameCompletion = async () => {
+    try {
+      await axios.patch(
+        `${API_URL}/users/${user._id}/game-stats`,
+        {
+          xpGained: score + 10,
+          timeSpent: 5,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      animateGameWin();
+      dispatch(updateUserData(user._id));
+      
+      setTimeout(() => {
+        setAlertConfig({
+          visible: true,
+          title: '🎉 Félicitations!',
+          message: `Vous avez terminé le jeu avec ${score + 10} points!`,
+          buttons: [
+            {
+              text: 'Retour aux jeux',
+              icon: 'game-controller',
+              onPress: () => navigation.goBack()
+            }
+          ]
+        });
+      }, 1500);
+    } catch (error) {
+      console.error('Error updating stats:', error);
+    }
+  };
+
+  const handleGameOver = () => {
+    animateGameLose();
+    setTimeout(() => {
+      setAlertConfig({
+        visible: true,
+        title: '💔 Game Over',
+        message: `Votre score final: ${score} points`,
+        buttons: [
+          {
+            text: 'Retour aux jeux',
+            icon: 'game-controller',
+            style: 'cancel',
+            onPress: () => navigation.goBack()
+          },
+          {
+            text: 'Réessayer',
+            icon: 'refresh',
+            onPress: () => {
+              setLives(3);
+              setScore(0);
+              setProgress(0);
+              startNewRound();
+            }
+          }
+        ]
+      });
+    }, 1000);
+  };
+
   const handleAnswer = async (isCorrect) => {
     if (isCorrect === currentPair.correct) {
-      // Correct answer
       animateCorrectAnswer();
       setScore(score + 10);
       setProgress(progress + 1);
       
       if (progress + 1 >= 10) {
-        // Game completed successfully
-        try {
-          await axios.patch(
-            `${API_URL}/users/${user._id}/game-stats`,
-            {
-              xpGained: score,
-              timeSpent: 5,
-            },
-            {
-              headers: { Authorization: `Bearer ${token}` }
-            }
-          );
-          
-          Alert.alert(
-            'Félicitations!',
-            `Vous avez terminé le jeu avec ${score} points!`,
-            [
-              {
-                text: 'Retour aux jeux',
-                onPress: () => navigation.goBack(),
-              }
-            ]
-          );
-        } catch (error) {
-          console.error('Error updating stats:', error);
-        }
+        await handleGameCompletion();
       } else {
         setTimeout(startNewRound, 500);
       }
     } else {
-      // Wrong answer
       animateWrongAnswer();
       setLives(lives - 1);
       if (lives <= 1) {
-        Alert.alert(
-          'Game Over',
-          `Votre score final: ${score} points`,
-          [
-            {
-              text: 'Réessayer',
-              onPress: () => {
-                setLives(3);
-                setScore(0);
-                setProgress(0);
-                startNewRound();
-              },
-            },
-            {
-              text: 'Retour aux jeux',
-              onPress: () => navigation.goBack(),
-            },
-          ]
-        );
+        handleGameOver();
       } else {
         setTimeout(startNewRound, 500);
       }
     }
   };
+
+  const renderWinOverlay = () => (
+    <Animated.View 
+      style={[
+        styles.overlay,
+        { 
+          backgroundColor: '#99f21c88',
+          opacity: winAnimation,
+          zIndex: 10,
+        }
+      ]} 
+      pointerEvents="none"
+    >
+      <Animated.View style={{
+        transform: [
+          {
+            scale: winAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.5, 1]
+            })
+          }
+        ]
+      }}>
+        <Text style={[styles.winText, { textAlign: 'center' }]}>VICTOIRE!</Text>
+      </Animated.View>
+    </Animated.View>
+  );
+
+  const renderLoseOverlay = () => (
+    <Animated.View 
+      style={[
+        styles.overlay,
+        { 
+          backgroundColor: '#FF444488',
+          opacity: loseAnimation,
+          zIndex: 10,
+        }
+      ]} 
+      pointerEvents="none"
+    >
+      <Animated.View style={{
+        transform: [
+          {
+            scale: loseAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.5, 1]
+            })
+          }
+        ]
+      }}>
+        <Text style={[styles.loseText, { textAlign: 'center' }]}>GAME OVER</Text>
+      </Animated.View>
+    </Animated.View>
+  );
 
   if (loading || !currentPair) {
     return (
@@ -252,6 +440,15 @@ export default function WordToWordGameScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      <CustomAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        buttons={alertConfig.buttons}
+        onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+      />
+      {renderWinOverlay()}
+      {renderLoseOverlay()}
       {/* Feedback overlays */}
       <Animated.View 
         style={[
@@ -330,9 +527,9 @@ export default function WordToWordGameScreen({ navigation }) {
             },
           ]}
         >
-          <Text style={styles.word}>{currentPair.word}</Text>
+          <Text style={styles.word}>{currentPair.sourceWord}</Text>
           <Ionicons name="arrow-down" size={32} color="#666666" />
-          <Text style={styles.translation}>{currentPair.translation}</Text>
+          <Text style={styles.translation}>{currentPair.targetWord}</Text>
         </Animated.View>
 
         <View style={styles.buttonsContainer}>
@@ -464,6 +661,18 @@ const styles = StyleSheet.create({
   scorePopupText: {
     color: '#FFD700',
     fontSize: 24,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
+  },
+  winText: {
+    color: '#FFFFFF',
+    fontSize: 32,
+    fontWeight: 'bold',
+    fontFamily: 'monospace',
+  },
+  loseText: {
+    color: '#FFFFFF',
+    fontSize: 32,
     fontWeight: 'bold',
     fontFamily: 'monospace',
   },

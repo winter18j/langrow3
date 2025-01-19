@@ -107,7 +107,22 @@ export class UserService {
 
     user.timeSpentLearning += timeSpent;
 
-    return user.save();
+    // Save the user first to ensure their new level is recorded
+    await user.save();
+
+    // Update ladder ranks for all users
+    const allUsers = await this.userModel.find().sort({ level: -1, xpToNextLevel: -1 }).exec();
+    const updateOperations = allUsers.map((user, index) => ({
+      updateOne: {
+        filter: { _id: user._id },
+        update: { $set: { ladderRank: index + 1 } }
+      }
+    }));
+
+    await this.userModel.bulkWrite(updateOperations);
+
+    // Fetch and return the updated user
+    return this.findOne(id);
   }
 
   async remove(id: string): Promise<UserDocument> {
