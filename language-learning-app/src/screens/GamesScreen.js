@@ -29,6 +29,14 @@ const GAMES = [
   },
   {
     id: 4,
+    title: 'Mots Mêlés',
+    description: 'Démêlez les lettres pour former le bon mot. Utilisez des power-ups pour vous aider!',
+    icon: 'shuffle-outline',
+    route: 'WordScramble',
+    color: '#99f21c',
+  },
+  {
+    id: 5,
     title: 'Quiz Avancé',
     description: 'Testez vos connaissances avec des questions complexes sur la grammaire et le vocabulaire.',
     icon: 'help-circle-outline',
@@ -36,7 +44,7 @@ const GAMES = [
     color: '#6C5CE7',
   },
   {
-    id: 5,
+    id: 6,
     title: 'Chat IA',
     description: 'Pratiquez la conversation avec une IA intelligente qui s\'adapte à votre niveau.',
     icon: 'chatbubbles-outline',

@@ -3,6 +3,7 @@ import { Document } from 'mongoose';
 import { League } from '../enums/league.enum';
 import { Language } from '../enums/language.enum';
 import { GeoLocation } from '../interfaces/location.interface';
+import * as mongoose from 'mongoose';
 
 export type UserDocument = User & Document;
 
@@ -62,6 +63,18 @@ export class User {
 
   @Prop({ default: 0 })
   xp: number;
+
+  @Prop({ default: 0 })
+  coins: number;
+
+  @Prop({ type: [{ 
+    id: String,
+    quantity: { type: Number, default: 0 }
+  }], default: [] })
+  ownedPowerUps: Array<{
+    id: string;
+    quantity: number;
+  }>;
 
   @Prop({ default: 0 })
   totalTimeSpent: number;

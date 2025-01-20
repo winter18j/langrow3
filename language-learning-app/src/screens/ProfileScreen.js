@@ -296,6 +296,81 @@ export default function ProfileScreen({ navigation }) {
         {renderLeagueInfo()}
         {renderStats()}
 
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Level</Text>
+            <Text style={styles.statValue}>{user?.level || 1}</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Coins</Text>
+            <View style={styles.coinContainer}>
+              <Text style={styles.statValue}>{user?.coins || 0}</Text>
+              <Text style={styles.coinSymbol}>🪙</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.coinsSection}>
+          <Text style={styles.sectionTitle}>Get More Coins</Text>
+          <View style={styles.coinOptions}>
+            <TouchableOpacity 
+              style={styles.coinOption}
+              onPress={() => {
+                Alert.alert(
+                  'Watch Ad',
+                  'Watch a short video to earn 50 coins!',
+                  [
+                    {
+                      text: 'Coming Soon',
+                      onPress: () => Alert.alert('Coming Soon', 'Ad system will be available soon!')
+                    },
+                    {
+                      text: 'Cancel',
+                      style: 'cancel'
+                    }
+                  ]
+                );
+              }}
+            >
+              <Ionicons name="play-circle" size={24} color="#99f21c" />
+              <Text style={styles.coinOptionText}>Watch Ad</Text>
+              <Text style={styles.coinReward}>+50 🪙</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.coinOption}
+              onPress={() => {
+                Alert.alert(
+                  'Purchase Coins',
+                  'Choose a coin package:',
+                  [
+                    {
+                      text: '100 Coins ($0.99)',
+                      onPress: () => Alert.alert('Coming Soon', 'In-app purchases will be available soon!')
+                    },
+                    {
+                      text: '500 Coins ($3.99)',
+                      onPress: () => Alert.alert('Coming Soon', 'In-app purchases will be available soon!')
+                    },
+                    {
+                      text: '1000 Coins ($6.99)',
+                      onPress: () => Alert.alert('Coming Soon', 'In-app purchases will be available soon!')
+                    },
+                    {
+                      text: 'Cancel',
+                      style: 'cancel'
+                    }
+                  ]
+                );
+              }}
+            >
+              <Ionicons name="cart" size={24} color="#99f21c" />
+              <Text style={styles.coinOptionText}>Buy Coins</Text>
+              <Text style={styles.coinReward}>💰</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {__DEV__ && (
           <TouchableOpacity 
             style={styles.devButton}
@@ -421,28 +496,67 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     padding: 20,
-    gap: 12,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    margin: 10,
   },
   statCard: {
-    flex: 1,
-    backgroundColor: '#111111',
-    padding: 16,
-    borderRadius: 12,
     alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginVertical: 8,
-    fontFamily: 'monospace',
+    padding: 10,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#666666',
-    fontFamily: 'monospace',
+    color: '#666',
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  statValue: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  coinContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  coinSymbol: {
+    fontSize: 20,
+    marginLeft: 5,
+  },
+  coinsSection: {
+    padding: 20,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    margin: 10,
+  },
+  sectionTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  coinOptions: {
+    gap: 10,
+  },
+  coinOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#333',
+    padding: 15,
+    borderRadius: 8,
+    justifyContent: 'space-between',
+  },
+  coinOptionText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    flex: 1,
+    marginLeft: 10,
+  },
+  coinReward: {
+    color: '#99f21c',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   languageCard: {
     padding: 20,
@@ -450,13 +564,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     borderRadius: 12,
     marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 16,
-    fontFamily: 'monospace',
   },
   languagesContainer: {
     flexDirection: 'row',

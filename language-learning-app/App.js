@@ -20,8 +20,10 @@ const MapScreen = lazy(() => import('./src/screens/MapScreen'));
 const ProfileScreen = lazy(() => import('./src/screens/ProfileScreen'));
 const GamesScreen = lazy(() => import('./src/screens/GamesScreen'));
 const LeaderboardScreen = lazy(() => import('./src/screens/LeaderboardScreen'));
+const WordToImageGameScreen = lazy(() => import('./src/screens/WordToImageGameScreen'));
 const WordToWordGameScreen = lazy(() => import('./src/screens/WordToWordGameScreen'));
 const FillInBlanksScreen = lazy(() => import('./src/screens/FillInBlanksScreen'));
+const WordScrambleScreen = lazy(() => import('./src/screens/WordScrambleScreen'));
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -163,6 +165,13 @@ const MainNavigator = () => {
       }}
     >
       <Stack.Screen name="TabNavigator" component={TabNavigator} />
+      <Stack.Screen name="WordToImageGame">
+        {(props) => (
+          <Suspense fallback={<LoadingScreen />}>
+            <WordToImageGameScreen {...props} />
+          </Suspense>
+        )}
+      </Stack.Screen>
       <Stack.Screen name="WordToWordGame">
         {(props) => (
           <Suspense fallback={<LoadingScreen />}>
@@ -174,6 +183,13 @@ const MainNavigator = () => {
         {(props) => (
           <Suspense fallback={<LoadingScreen />}>
             <FillInBlanksScreen {...props} />
+          </Suspense>
+        )}
+      </Stack.Screen>
+      <Stack.Screen name="WordScramble">
+        {(props) => (
+          <Suspense fallback={<LoadingScreen />}>
+            <WordScrambleScreen {...props} />
           </Suspense>
         )}
       </Stack.Screen>

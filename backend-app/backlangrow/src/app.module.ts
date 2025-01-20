@@ -10,6 +10,7 @@ import { WordPairsModule } from './word-pairs/word-pairs.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { NotificationsScheduler } from './notifications/notifications.scheduler';
 import { FillInBlanksModule } from './fill-in-blanks/fill-in-blanks.module';
+import { WordScrambleModule } from './word-scramble/word-scramble.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { FillInBlanksModule } from './fill-in-blanks/fill-in-blanks.module';
     WordPairsModule,
     NotificationsModule,
     FillInBlanksModule,
+    WordScrambleModule,
   ],
   controllers: [AppController],
   providers: [AppService, NotificationsScheduler],
