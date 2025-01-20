@@ -6,11 +6,13 @@ import {
   Dimensions,
   TouchableOpacity,
   Platform,
+  Switch,
 } from 'react-native';
 import MapView, { PROVIDER_GOOGLE, Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { setVisibleOnMap } from '../redux/slices/mapSlice';
 import PartnerMarker from '../components/map/PartnerMarker';
 import EventMarker from '../components/map/EventMarker';
 import QuestMarker from '../components/map/QuestMarker';
@@ -209,6 +211,8 @@ export default function MapScreen() {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [selectedItem, setSelectedItem] = useState(null);
   const user = useSelector(state => state.auth.user);
+  const isVisibleOnMap = useSelector(state => state.map.isVisibleOnMap);
+  const dispatch = useDispatch();
 
   // Fake data states
   const [partners, setPartners] = useState([]);
@@ -388,6 +392,15 @@ export default function MapScreen() {
   const renderHeader = () => (
     <View style={styles.header}>
       <Text style={styles.title}>🎯 Explore</Text>
+      <View style={styles.visibilityContainer}>
+        <Text style={styles.visibilityText}>Show me on map</Text>
+        <Switch
+          value={isVisibleOnMap}
+          onValueChange={(value) => dispatch(setVisibleOnMap(value))}
+          trackColor={{ false: '#222222', true: '#99f21c' }}
+          thumbColor={isVisibleOnMap ? '#FFFFFF' : '#666666'}
+        />
+      </View>
       <View style={styles.filterContainer}>
         <TouchableOpacity 
           style={[
@@ -461,6 +474,30 @@ export default function MapScreen() {
         showsUserLocation={true}
         showsMyLocationButton={true}
       >
+        {isVisibleOnMap && location && (
+          <PartnerMarker
+            coordinate={{
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+            }}
+            isOnline={true}
+            onPress={() => handleMarkerPress('partner', {
+              id: user.id,
+              firstName: user.firstName || 'You',
+              lastName: user.lastName || '',
+              isOnline: true,
+              nativeLanguage: user.nativeLanguage || 'en',
+              learningLanguage: user.learningLanguage || 'fr',
+              distance: '0',
+              bio: 'This is you!',
+              coordinate: {
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+              },
+            })}
+          />
+        )}
+
         {(selectedFilter === 'all' || selectedFilter === 'partners') &&
           partners.map(partner => (
             <PartnerMarker
@@ -511,6 +548,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
     marginBottom: 16,
+    fontFamily: 'monospace',
+  },
+  visibilityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    backgroundColor: '#222222',
+    padding: 12,
+    borderRadius: 20,
+  },
+  visibilityText: {
+    color: '#FFFFFF',
+    fontSize: 16,
     fontFamily: 'monospace',
   },
   filterContainer: {
