@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import NotificationService from '../../services/NotificationService';
 
-const API_URL = 'http://192.168.0.5:3000';
+const API_URL = 'http://192.168.0.126:3000';
 
 const initialState = {
   user: null,
@@ -10,6 +10,7 @@ const initialState = {
   registrationData: null,
   loading: false,
   error: null,
+  levelUpNotification: null,
 };
 
 export const updateUserData = createAsyncThunk(
@@ -96,6 +97,9 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    clearLevelUpNotification: (state) => {
+      state.levelUpNotification = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -126,7 +130,26 @@ const authSlice = createSlice({
         state.error = action.payload;
       })
       .addCase(updateUserData.fulfilled, (state, action) => {
+        const oldLevel = state.user?.level;
+        const oldLeague = state.user?.league;
         state.user = action.payload;
+        
+        // Check for level up or league change
+        if (oldLevel && state.user.level > oldLevel) {
+          state.levelUpNotification = {
+            type: 'LEVEL_UP',
+            oldLevel,
+            newLevel: state.user.level,
+            message: `Félicitations! Vous avez atteint le niveau ${state.user.level}!`
+          };
+        } else if (oldLeague && state.user.league !== oldLeague) {
+          state.levelUpNotification = {
+            type: 'LEAGUE_CHANGE',
+            oldLeague,
+            newLeague: state.user.league,
+            message: `Félicitations! Vous êtes maintenant en ligue ${state.user.league}!`
+          };
+        }
       })
       .addCase(updatePushToken.fulfilled, (state, action) => {
         if (state.user && action.payload) {
@@ -137,5 +160,5 @@ const authSlice = createSlice({
 });
 
 export const selectLoggedIn = (state) => !!state.auth.token;
-export const { setRegistrationData, logout, clearError } = authSlice.actions;
+export const { setRegistrationData, logout, clearError, clearLevelUpNotification } = authSlice.actions;
 export default authSlice.reducer;

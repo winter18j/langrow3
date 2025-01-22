@@ -46,7 +46,7 @@ export default function ProfileScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
   const [selectedLanguageType, setSelectedLanguageType] = useState(null); // 'main' or 'learned'
-  const API_URL = 'http://192.168.0.5:3000';
+  const API_URL = 'http://192.168.0.126:3000';
   const [xpAnimation] = useState(new Animated.Value(0));
   const [prevXp, setPrevXp] = useState(0);
 

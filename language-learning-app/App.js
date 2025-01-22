@@ -1,12 +1,11 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { lazy, Suspense, useEffect } from 'react';
-import { StyleSheet, Text, View, ActivityIndicator } from 'react-native';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
+import { StyleSheet, Text, View, ActivityIndicator, Animated, Dimensions } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { Provider } from 'react-redux';
+import { Provider, useSelector, useDispatch } from 'react-redux';
 import { store } from './src/redux/store';
-import { useSelector } from 'react-redux';
-import { selectLoggedIn } from './src/redux/slices/authSlice';
+import { selectLoggedIn, clearLevelUpNotification } from './src/redux/slices/authSlice';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import NotificationService from './src/services/NotificationService';
@@ -197,9 +196,79 @@ const MainNavigator = () => {
   );
 };
 
+const LevelUpNotification = ({ notification, onDismiss }) => {
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [translateY] = useState(new Animated.Value(-100));
+
+  useEffect(() => {
+    if (notification) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      // Auto dismiss after 3 seconds
+      const timer = setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateY, {
+            toValue: -100,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start(() => onDismiss());
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  if (!notification) return null;
+
+  const isLevelUp = notification.type === 'LEVEL_UP';
+  const icon = isLevelUp ? 'trending-up' : 'trophy';
+  const color = isLevelUp ? '#99f21c' : '#FFD700';
+
+  return (
+    <Animated.View
+      style={[
+        styles.notificationContainer,
+        {
+          opacity: fadeAnim,
+          transform: [{ translateY }],
+          borderLeftColor: color,
+        },
+      ]}
+    >
+      <View style={styles.notificationContent}>
+        <Ionicons name={icon} size={24} color={color} />
+        <View style={styles.notificationText}>
+          <Text style={styles.notificationTitle}>
+            {isLevelUp ? '🎉 Niveau Supérieur!' : '🏆 Nouvelle Ligue!'}
+          </Text>
+          <Text style={styles.notificationMessage}>{notification.message}</Text>
+        </View>
+      </View>
+    </Animated.View>
+  );
+};
 
 const RootNavigator = () => {
   const isLoggedIn = useSelector(selectLoggedIn);
+  const dispatch = useDispatch();
+  const levelUpNotification = useSelector(state => state.auth.levelUpNotification);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -209,7 +278,15 @@ const RootNavigator = () => {
     }
   }, [isLoggedIn]);
 
-  return isLoggedIn ? <MainNavigator /> : <AuthNavigator />;
+  return (
+    <View style={{ flex: 1 }}>
+      {isLoggedIn ? <MainNavigator /> : <AuthNavigator />}
+      <LevelUpNotification
+        notification={levelUpNotification}
+        onDismiss={() => dispatch(clearLevelUpNotification())}
+      />
+    </View>
+  );
 };
 
 export default function App() {
@@ -238,5 +315,42 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  notificationContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#111111',
+    margin: 16,
+    marginTop: 60,
+    borderRadius: 12,
+    padding: 16,
+    elevation: 5,
+    shadowColor: '#99f21c',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    borderLeftWidth: 4,
+  },
+  notificationContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  notificationText: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  notificationTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    fontFamily: 'monospace',
+  },
+  notificationMessage: {
+    color: '#999999',
+    fontSize: 14,
+    fontFamily: 'monospace',
   },
 });

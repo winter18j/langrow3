@@ -40,7 +40,7 @@ export default function WordToWordGameScreen({ navigation }) {
   const user = useSelector(state => state.auth.user);
   const token = useSelector(state => state.auth.token);
   const { pairs, status, error } = useSelector(state => state.wordPairs);
-  const API_URL = 'http://192.168.0.5:3000';
+  const API_URL = 'http://192.168.0.126:3000';
 
   const [alertConfig, setAlertConfig] = useState({
     visible: false,

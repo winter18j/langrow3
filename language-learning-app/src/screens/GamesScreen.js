@@ -1,16 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSelector } from 'react-redux';
 
 const GAMES = [
-  {
-    id: 1,
-    title: 'Mot à Image',
-    description: 'Associez les mots aux images correspondantes pour améliorer votre vocabulaire visuel.',
-    icon: 'image-outline',
-    route: 'WordToImageGame',
-    color: '#FF6B6B',
-  },
   {
     id: 2,
     title: 'Mot à Mot',
@@ -18,6 +11,7 @@ const GAMES = [
     icon: 'text-outline',
     route: 'WordToWordGame',
     color: '#4ECDC4',
+    requiredLevel: 1,
   },
   {
     id: 3,
@@ -26,6 +20,7 @@ const GAMES = [
     icon: 'create-outline',
     route: 'FillInBlanks',
     color: '#FFE66D',
+    requiredLevel: 1,
   },
   {
     id: 4,
@@ -34,6 +29,17 @@ const GAMES = [
     icon: 'shuffle-outline',
     route: 'WordScramble',
     color: '#99f21c',
+    requiredLevel: 10,
+  },
+  {
+    id: 1,
+    title: 'Mot à Image',
+    description: 'Associez les mots aux images correspondantes pour améliorer votre vocabulaire visuel.',
+    icon: 'image-outline',
+    route: 'WordToImageGame',
+    color: '#FF6B6B',
+    requiredLevel: 20,
+    comingSoon: true,
   },
   {
     id: 5,
@@ -42,6 +48,8 @@ const GAMES = [
     icon: 'help-circle-outline',
     route: 'AdvancedQuiz',
     color: '#6C5CE7',
+    requiredLevel: 20,
+    comingSoon: true,
   },
   {
     id: 6,
@@ -50,30 +58,63 @@ const GAMES = [
     icon: 'chatbubbles-outline',
     route: 'AIChat',
     color: '#A8E6CF',
+    requiredLevel: 20,
+    comingSoon: true,
   },
 ];
 
 export default function GamesScreen({ navigation }) {
-  const renderGameCard = ({ id, title, description, icon, color, route }) => (
-    <TouchableOpacity
-      key={id}
-      style={[styles.card, { borderLeftColor: color }]}
-      onPress={() => navigation.navigate(route)}
-    >
-      <View style={styles.cardContent}>
-        <View style={[styles.iconContainer, { backgroundColor: color }]}>
-          <Ionicons name={icon} size={32} color="#000000" />
+  const userLevel = useSelector(state => state.auth.user?.level) || 1;
+
+  const renderGameCard = ({ id, title, description, icon, color, route, requiredLevel, comingSoon }) => {
+    const isLocked = userLevel < requiredLevel;
+    const cardOpacity = isLocked ? 0.5 : 1;
+    
+    return (
+      <TouchableOpacity
+        key={id}
+        style={[
+          styles.card,
+          { borderLeftColor: color, opacity: cardOpacity }
+        ]}
+        onPress={() => {
+          if (!isLocked && !comingSoon) {
+            navigation.navigate(route);
+          }
+        }}
+        disabled={isLocked || comingSoon}
+      >
+        <View style={styles.cardContent}>
+          <View style={[styles.iconContainer, { backgroundColor: color }]}>
+            <Ionicons name={icon} size={32} color="#000000" />
+          </View>
+          <View style={styles.textContainer}>
+            <View style={styles.titleContainer}>
+              <Text style={styles.cardTitle}>{title}</Text>
+              {comingSoon && (
+                <Text style={styles.comingSoonBadge}>Bientôt disponible</Text>
+              )}
+            </View>
+            <Text style={styles.cardDescription}>{description}</Text>
+            {isLocked && !comingSoon && (
+              <Text style={styles.levelRequirement}>
+                Débloque au niveau {requiredLevel}
+              </Text>
+            )}
+          </View>
         </View>
-        <View style={styles.textContainer}>
-          <Text style={styles.cardTitle}>{title}</Text>
-          <Text style={styles.cardDescription}>{description}</Text>
+        <View style={styles.arrowContainer}>
+          {!comingSoon && (
+            <Ionicons 
+              name={isLocked ? "lock-closed" : "chevron-forward"} 
+              size={24} 
+              color="#666666" 
+            />
+          )}
         </View>
-      </View>
-      <View style={styles.arrowContainer}>
-        <Ionicons name="chevron-forward" size={24} color="#666666" />
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -146,11 +187,16 @@ const styles = StyleSheet.create({
   textContainer: {
     flex: 1,
   },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
   cardTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 4,
     fontFamily: 'monospace',
   },
   cardDescription: {
@@ -161,5 +207,20 @@ const styles = StyleSheet.create({
   },
   arrowContainer: {
     marginLeft: 12,
+  },
+  levelRequirement: {
+    color: '#FF4444',
+    fontSize: 12,
+    marginTop: 4,
+    fontFamily: 'monospace',
+  },
+  comingSoonBadge: {
+    backgroundColor: '#333333',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontFamily: 'monospace',
   },
 });

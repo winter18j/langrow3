@@ -28,7 +28,7 @@ import axios from 'axios';
 import CustomAlert from '../components/CustomAlert';
 
 const { width, height } = Dimensions.get('window');
-const API_URL = 'http://192.168.0.5:3000';
+const API_URL = 'http://192.168.0.126:3000';
 
 export default function WordScrambleScreen({ navigation }) {
   const dispatch = useDispatch();

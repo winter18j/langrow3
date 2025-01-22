@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "43664982328",
+    "project_id": "langrow3-c0d30",
+    "storage_bucket": "langrow3-c0d30.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:43664982328:android:950735136ed4af4f7941cd",
+        "android_client_info": {
+          "package_name": "com.marcy.langrow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhIU2ABuoHjpOK7CcqyVSwoKJ1kS6KG-Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
