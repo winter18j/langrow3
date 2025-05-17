@@ -53,7 +53,7 @@ export default function LeaderboardScreen() {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const token = useSelector((state) => state.auth.token);
-  const API_URL = 'http://192.168.0.126:3000';
+  const API_URL = 'http://192.168.1.28:3000';
 
   useEffect(() => {
     fetchLeaderboard();

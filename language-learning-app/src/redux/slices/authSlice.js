@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 import NotificationService from '../../services/NotificationService';
 
-const API_URL = 'http://192.168.0.126:3000';
+const API_URL = 'http://192.168.1.28:3000';
 
 const initialState = {
   user: null,
